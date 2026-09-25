@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Sparkles, Menu, X, Award, FileText, Image as ImageIcon, Send } from 'lucide-react';
+import { Sparkles, Menu, X, Award, FileText, Image as ImageIcon, Send, ShieldCheck } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -46,30 +46,51 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1.5 lg:gap-2">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                    isActive
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
-                      : 'text-slate-700 hover:text-emerald-800 hover:bg-emerald-50/80'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-100' : 'text-emerald-600'}`} />
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Desktop Navigation & Admin Login */}
+          <div className="hidden md:flex items-center gap-2 lg:gap-3">
+            <nav className="flex items-center gap-1 lg:gap-2">
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                      isActive
+                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
+                        : 'text-slate-700 hover:text-emerald-800 hover:bg-emerald-50/80'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-100' : 'text-emerald-600'}`} />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
 
-          {/* Mobile menu button */}
-          <div className="flex md:hidden">
+            {/* Supervisor Login Button */}
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold shadow-sm transition-all duration-200 hover:shadow active:scale-95"
+              title="دخول المشرفة لاعتماد المشاركات"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-700" />
+              <span>دخول المشرفة</span>
+            </Link>
+          </div>
+
+          {/* Mobile Right Controls */}
+          <div className="flex md:hidden items-center gap-2">
+            <Link
+              href="/admin"
+              className="flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold"
+              title="دخول المشرفة"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-700" />
+              <span>دخول</span>
+            </Link>
+
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               type="button"
@@ -85,7 +106,7 @@ export default function Navbar() {
 
       {/* Mobile menu dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-emerald-100 bg-white/95 backdrop-blur-lg px-4 pt-3 pb-5 space-y-1.5 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="md:hidden border-t border-emerald-100 bg-white/95 backdrop-blur-lg px-4 pt-3 pb-5 space-y-2 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive = pathname === link.href;
@@ -105,6 +126,17 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          <div className="pt-2 border-t border-emerald-100">
+            <Link
+              href="/admin"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-base bg-emerald-50 text-emerald-900 border border-emerald-200 transition-colors"
+            >
+              <ShieldCheck className="w-5 h-5 text-emerald-700" />
+              <span>لوحة تحكم المشرفة (اعتماد المشاركات)</span>
+            </Link>
+          </div>
         </div>
       )}
     </header>
