@@ -88,7 +88,7 @@ export async function insertSubmission({ id, student_name, title, description, c
   ]);
 }
 
-export async function updateSubmissionStatus(id, status, admin_note, reviewed_by = null) {
+export async function updateSubmissionStatus(id, status, admin_note, reviewed_by = '') {
   await ensureDatabaseTables();
   const query = `
     UPDATE submissions 
