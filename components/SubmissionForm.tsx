@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { SubmissionCategory } from '@/types/database';
 import { 
   Send, 
@@ -113,81 +112,51 @@ export default function SubmissionForm() {
     setIsLoading(true);
 
     try {
-      // Save name for convenience
+      // Save name in localStorage for convenience
       if (typeof window !== 'undefined') {
         localStorage.setItem('kimia_student_name', trimmedName);
       }
 
-      const supabase = createClient();
-      let publicFileUrl: string | null = null;
+      let uploadedFileUrl: string | null = null;
       let uploadedFilePath: string | null = null;
 
-      if (supabase && selectedFile) {
-        // Generate unique file path
-        const fileExt = selectedFile.name.split('.').pop()?.toLowerCase() || 'dat';
-        const sanitizedBaseName = selectedFile.name
-          .replace(/\.[^/.]+$/, '')
-          .replace(/[^a-zA-Z0-9]/g, '_')
-          .slice(0, 20);
-        const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}_${sanitizedBaseName}.${fileExt}`;
-        uploadedFilePath = `student_uploads/${uniqueFileName}`;
+      // 1. Upload file via Vercel Blob API if attached
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
 
-        // Upload to Supabase Storage Bucket 'submissions'
-        const { error: uploadError } = await supabase.storage
-          .from('submissions')
-          .upload(uploadedFilePath, selectedFile, {
-            cacheControl: '3600',
-            upsert: false,
-          });
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-        if (uploadError) {
-          console.warn('Storage upload note:', uploadError.message);
-        } else {
-          // Get public URL
-          const { data: publicUrlData } = supabase.storage
-            .from('submissions')
-            .getPublicUrl(uploadedFilePath);
-          publicFileUrl = publicUrlData.publicUrl;
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          uploadedFileUrl = uploadData.url;
+          uploadedFilePath = uploadData.pathname;
         }
       }
 
-      if (supabase) {
-        // Insert submission to database
-        const { error: insertError } = await supabase.from('submissions').insert([
-          {
-            student_name: trimmedName,
-            title: trimmedTitle,
-            description: trimmedDesc,
-            category: category,
-            file_url: publicFileUrl,
-            file_path: uploadedFilePath,
-            status: 'pending',
-          },
-        ]);
-
-        if (insertError) {
-          console.error('Database insert error:', insertError);
-          throw new Error(insertError.message);
-        }
-      } else {
-        // Fallback demo storage if Supabase credentials are placeholder
-        const localSubmissions = JSON.parse(localStorage.getItem('kimia_local_submissions') || '[]');
-        const newLocalEntry = {
-          id: 'local-' + Date.now(),
+      // 2. Submit record to Vercel Postgres API
+      const response = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           student_name: trimmedName,
           title: trimmedTitle,
           description: trimmedDesc,
           category: category,
-          file_url: filePreview || null,
-          file_path: null,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          reviewed_at: null,
-          reviewed_by: null,
-          admin_note: null,
-        };
-        localSubmissions.unshift(newLocalEntry);
-        localStorage.setItem('kimia_local_submissions', JSON.stringify(localSubmissions));
+          file_url: uploadedFileUrl || filePreview,
+          file_path: uploadedFilePath,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'فشل إرسال المشاركة');
       }
 
       // Successful submission

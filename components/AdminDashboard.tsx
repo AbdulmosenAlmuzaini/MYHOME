@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { Submission, SubmissionStatus } from '@/types/database';
 import { INITIAL_APPROVED_SUBMISSIONS } from '@/lib/mock-submissions';
 import { 
@@ -13,14 +12,10 @@ import {
   Clock, 
   XCircle, 
   AlertTriangle, 
-  FileText, 
   Search, 
-  Filter, 
   Eye, 
   User, 
   Tag, 
-  Calendar,
-  Sparkles,
   RefreshCw
 } from 'lucide-react';
 
@@ -35,48 +30,32 @@ export default function AdminDashboard() {
   const fetchAllSubmissions = async () => {
     setIsLoading(true);
     try {
-      const supabase = createClient();
-      if (supabase) {
-        // Check active session
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          // Check if mock session exists
-          const mock = localStorage.getItem('kimia_admin_mock_session');
-          if (!mock) {
-            router.push('/admin/login');
-            return;
-          }
+      // 1. Verify session
+      const meRes = await fetch('/api/admin/me');
+      if (!meRes.ok) {
+        router.push('/admin/login');
+        return;
+      }
+      const meData = await meRes.json();
+      setAdminEmail(meData.user?.email || null);
+
+      // 2. Fetch all submissions
+      const response = await fetch('/api/submissions?all=true');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.submissions) {
+          setSubmissions(data.submissions);
         } else {
-          setAdminEmail(session.user.email ?? null);
-        }
-
-        const { data, error } = await supabase
-          .from('submissions')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.warn('Admin fetch note:', error.message);
-          loadLocalSubmissions();
-        } else if (data) {
-          setSubmissions(data as Submission[]);
+          setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
         }
       } else {
-        loadLocalSubmissions();
+        setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
       }
     } catch (err) {
       console.error('Error loading submissions:', err);
-      loadLocalSubmissions();
+      setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadLocalSubmissions = () => {
-    if (typeof window !== 'undefined') {
-      const local = JSON.parse(localStorage.getItem('kimia_local_submissions') || '[]');
-      const combined = [...local, ...INITIAL_APPROVED_SUBMISSIONS];
-      setSubmissions(combined);
     }
   };
 
@@ -86,13 +65,7 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     try {
-      const supabase = createClient();
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('kimia_admin_mock_session');
-      }
+      await fetch('/api/admin/logout', { method: 'POST' });
       router.push('/admin/login');
       router.refresh();
     } catch (err) {

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>كيمياء وطن أخضر</title>
+<style>
+  :root{
+    --green:#0f7a4b; --green2:#18a66a; --light:#f4fbf7; --gold:#d7a62b;
+    --text:#15372a; --card:#ffffff; --muted:#6b7d74; --danger:#b03a2e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Cairo',Tahoma,Arial,sans-serif;background:linear-gradient(135deg,#eefaf3,#ffffff);color:var(--text)}
+  .app{max-width:1050px;margin:auto;padding:20px}
+  .hero{
+    background:linear-gradient(135deg,var(--green),var(--green2));
+    color:white;border-radius:24px;padding:28px;box-shadow:0 12px 30px rgba(15,122,75,.18);
+    position:relative;overflow:hidden
+  }
+  .hero:after{content:"⚗️ 🌿 🇸🇦";position:absolute;left:24px;top:22px;font-size:42px;opacity:.18}
+  h1{margin:0 0 8px;font-size:34px}
+  .subtitle{font-size:18px;margin-bottom:18px}
+  .idea{background:rgba(255,255,255,.13);padding:16px;border-radius:16px;line-height:1.9}
+  .axes{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .tag{background:white;color:var(--green);padding:8px 12px;border-radius:999px;font-size:14px;font-weight:bold}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
+  .navbtn{
+    border:0;background:var(--card);border-radius:18px;padding:22px 12px;cursor:pointer;
+    box-shadow:0 8px 24px rgba(0,0,0,.08);font-size:17px;font-weight:bold;color:var(--text);
+    transition:.2s
+  }
+  .navbtn:hover{transform:translateY(-3px)}
+  .navbtn span{display:block;font-size:34px;margin-bottom:8px}
+  .section{display:none;margin-top:20px;background:white;padding:22px;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.07)}
+  .section.active{display:block}
+  .back{border:0;background:#e9f6ef;color:var(--green);padding:9px 14px;border-radius:10px;cursor:pointer;font-weight:bold}
+  input,textarea,select{
+    width:100%;padding:12px;border:1px solid #cfe2d8;border-radius:12px;margin:7px 0 13px;font-family:'Cairo',Tahoma,Arial,sans-serif
+  }
+  .primary{background:var(--green);color:white;border:0;padding:12px 18px;border-radius:12px;cursor:pointer;font-weight:bold}
+  .secondary{background:#eef5f1;color:var(--green);border:0;padding:12px 18px;border-radius:12px;cursor:pointer;font-weight:bold}
+  .question{padding:16px;border:1px solid #e5eee9;border-radius:14px;margin:12px 0}
+  .question label{display:block;padding:6px 0;cursor:pointer}
+  .result{font-weight:bold;margin-top:14px}
+  .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .card{border:1px solid #e3eee8;border-radius:16px;padding:14px;background:#fbfefc}
+  .status{font-size:13px;color:var(--muted)}
+  .admin-card{border:1px solid #e5eee9;border-radius:14px;padding:14px;margin:10px 0}
+  .admin-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .approve{background:var(--green2);color:white;border:0;padding:8px 12px;border-radius:10px;cursor:pointer}
+  .reject{background:#f7e8e6;color:var(--danger);border:0;padding:8px 12px;border-radius:10px;cursor:pointer}
+  .printbox{border:3px double var(--green);padding:28px;border-radius:18px;text-align:center;background:white}
+  .footer{text-align:center;margin:22px 0;color:#49665a;line-height:1.8}
+  .small{font-size:13px;color:var(--muted)}
+  @media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.gallery{grid-template-columns:1fr}}
+  @media print{
+    body *{visibility:hidden}
+    #pledgePrint,#pledgePrint *{visibility:visible}
+    #pledgePrint{position:absolute;inset:0;padding:30px}
+    .no-print{display:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <section id="home">
+    <div class="hero">
+      <h1>🇸🇦 كيمياء وطن أخضر</h1>
+      <div class="subtitle">كيمياء اليوم… استدامة الغد 🌱</div>
+      <div class="idea">
+        <b>فكرة المبادرة:</b><br>
+        مبادرة تعليمية تفاعلية تربط مفاهيم الكيمياء بالحفاظ على البيئة والثروات الطبيعية في وطني،
+        وتعرّف الطالبات بالجهود الوطنية في الاستدامة من خلال <b>تحديات وأسئلة تفاعلية ومشاركات حياتية</b>.
+        <div class="axes">
+          <span class="tag">🌳 التشجير ودورة الكربون</span>
+          <span class="tag">💧 استدامة المياه</span>
+          <span class="tag">♻️ إعادة التدوير والاقتصاد الدائري</span>
+          <span class="tag">☀️ الطاقة النظيفة</span>
+          <span class="tag">🌊 حماية البحار</span>
+          <span class="tag">🏜️ مكافحة التصحر</span>
+          <span class="tag">🌍 خفض الانبعاثات</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <button class="navbtn" onclick="show('quiz')"><span>🧪</span>ابدئي التحدي</button>
+      <button class="navbtn" onclick="show('share')"><span>🌱</span>مشاركتي</button>
+      <button class="navbtn" onclick="show('gallery')"><span>🖼️</span>المعرض</button>
+      <button class="navbtn" onclick="show('pledge')"><span>📜</span>ميثاق الاستدامة</button>
+      <button class="navbtn" onclick="show('teacher')"><span>👩🏻‍🏫</span>لوحة المعلمة</button>
+    </div>
+
+    <div class="footer">
+      <b>إعداد المعلمتين:</b> جميلة الصاعدي، صباح الأحمدي<br>
+      <b>مديرة الثانوية السادسة والثلاثون:</b> زينب الأمين
+    </div>
+  </section>
+
+  <section id="quiz" class="section">
+    <button class="back" onclick="goHome()">← الرئيسية</button>
+    <h2>🧪 تحدي الكيمياء والاستدامة</h2>
+    <label>اسم المتسابقة</label>
+    <input id="quizName" placeholder="اكتبي اسمك">
+
+    <div id="questions"></div>
+    <button class="primary" onclick="gradeQuiz()">إظهار النتيجة</button>
+    <div id="score" class="result"></div>
+  </section>
+
+  <section id="share" class="section">
+    <button class="back" onclick="goHome()">← الرئيسية</button>
+    <h2>🌱 مشاركتي</h2>
+    <div class="card" style="line-height:2;text-align:center">
+      <p style="font-size:20px;font-weight:700">لأن الاستدامة ليست مجرد معرفة… بل ممارسة وأثر.</p>
+      <p style="font-size:22px;font-weight:800;color:var(--green)">شاركينا إنجازكِ!</p>
+      <p>
+        ارفعي صورة أو عملًا أو فكرة أو مبادرة قمتِ بها وتسهم في المحافظة على البيئة
+        واستدامة موارد وطننا.
+      </p>
+      <a class="primary" style="display:inline-block;text-decoration:none;margin-top:8px"
+         href="https://docs.google.com/spreadsheets/d/1GcfR5xpxgyCcYxyPHIrHH0EGxR5AhUZoYA9wBmPxcSE/edit?usp=sharing"
+         target="_blank" rel="noopener noreferrer">🌱 فتح رابط مشاركتي</a>
+    </div>
+  </section>
+
+  <section id="gallery" class="section">
+    <button class="back" onclick="goHome()">← الرئيسية</button>
+    <h2>🖼️ معرض المشاركات المعتمدة</h2>
+    <div id="galleryGrid" class="gallery"></div>
+  </section>
+
+  <section id="teacher" class="section">
+    <button class="back" onclick="goHome()">← الرئيسية</button>
+    <h2>👩🏻‍🏫 لوحة المعلمة</h2>
+    <p>راجعي المشاركات ثم اعتمدي ما يناسب لعرضه في المعرض.</p>
+    <div id="teacherList"></div>
+  </section>
+
+  <section id="pledge" class="section">
+    <button class="back no-print" onclick="goHome()">← الرئيسية</button>
+    <h2 class="no-print">📜 ميثاق الاستدامة</h2>
+
+    <div id="pledgePrint" class="printbox">
+      <h2>«كيمياء وطن أخضر» 🌱</h2>
+      <h3>كيمياء اليوم… استدامة الغد</h3>
+      <h2>📜 ميثاق الاستدامة</h2>
+
+      <p style="font-size:22px"><b>أنا: <span id="pledgeDisplay">....................</span></b></p>
+
+      <h3>كيميائية من أجل وطني</h3>
+
+      <p style="line-height:2">
+        أتعهد أن أكون واعيةً بأهمية المحافظة على البيئة وموارد وطني،
+        وأن أجعل من معرفتي بالكيمياء وسيلةً لصناعة أثر إيجابي ومستدام.
+      </p>
+
+      <h3 style="text-align:right">وألتزم بأن:</h3>
+      <div style="text-align:right;line-height:2.3;font-size:18px">
+        ☐ أحافظ على الماء وأتجنب هدره.<br>
+        ☐ أساهم في تقليل النفايات وإعادة استخدام ما يمكن منها.<br>
+        ☐ أحرص على فرز المخلفات وإعادة التدوير.<br>
+        ☐ أعتني بالنباتات والمساحات الخضراء.<br>
+        ☐ أستخدم الطاقة والموارد بمسؤولية.
+      </div>
+
+      <div style="margin-top:26px;line-height:2;text-align:right">
+        <p><b>الاسم:</b> <span id="pledgeNameAuto">....................</span></p>
+        <p><b>التاريخ:</b> <span id="today"></span></p>
+        <p><b>التوقيع:</b> ____________________</p>
+      </div>
+
+      <h3 style="margin-top:28px">«وطننا أمانة… واستدامته مسؤوليتنا»</h3>
+    </div>
+
+    <div class="no-print" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+      <button class="primary" onclick="window.print()">🖨️ طباعة الميثاق</button>
+      <button class="secondary" onclick="goHome()">↻ العودة إلى الرئيسية</button>
+    </div>
+  </section>
+</div>
+
+<script>
+const quizData = [
+  {q:"🌳 ما الأثر البيئي الأهم لزيادة المساحات الخضراء وزراعة الأشجار؟",
+   a:["زيادة ثاني أكسيد الكربون","المساهمة في امتصاص ثاني أكسيد الكربون وتحسين جودة الهواء","زيادة استهلاك الوقود","زيادة ملوحة التربة"], c:1},
+  {q:"💧 أي ممارسة تسهم في تحقيق الاستدامة المائية؟",
+   a:["الإسراف في المياه","التخلص من المياه دون معالجة","معالجة المياه وإعادة استخدامها عند ملاءمة ذلك","استنزاف المياه الجوفية دون تنظيم"], c:2},
+  {q:"♻️ أي خيار يمثل تطبيقًا للاقتصاد الدائري؟",
+   a:["الاستخدام مرة واحدة","إعادة الاستخدام والتدوير","زيادة النفايات","التخلص من المنتجات القابلة لإعادة الاستخدام"], c:1},
+  {q:"☀️ أي مصدر يمثل طاقة متجددة؟",
+   a:["الفحم","النفط الخام","الطاقة الشمسية","الديزل"], c:2},
+  {q:"🌊 ما الأيونان الرئيسان المرتبطان بملوحة مياه البحر؟",
+   a:["H+ و OH-","Na+ و Cl-","Ca2+ و O2-","H+ و Cl-"], c:1},
+  {q:"🏜️ أي إجراء يساعد على الحد من التصحر؟",
+   a:["إزالة الغطاء النباتي","الرعي الجائر","التشجير واستعادة الغطاء النباتي","زيادة الاستنزاف المائي"], c:2},
+  {q:"🌍 أي ممارسة تسهم في خفض الانبعاثات الكربونية؟",
+   a:["زيادة حرق الوقود","رفع كفاءة الطاقة والتوسع في المتجددة","هدر الطاقة","حرق النفايات عشوائيًا"], c:1}
+];
+
+function show(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('home').style.display='none';
+  document.getElementById(id).classList.add('active');
+  if(id==='gallery') renderGallery();
+  if(id==='teacher') renderTeacher();
+}
+function goHome(){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('home').style.display='block';
+}
+function renderQuiz(){
+  const box=document.getElementById('questions');
+  box.innerHTML='';
+  quizData.forEach((item,i)=>{
+    let html=`<div class="question"><b>${i+1}. ${item.q}</b>`;
+    item.a.forEach((x,j)=>{
+      html += `<label><input type="radio" name="q${i}" value="${j}" style="width:auto;margin-left:8px"> ${x}</label>`;
+    });
+    html+='</div>';
+    box.innerHTML+=html;
+  });
+}
+function gradeQuiz(){
+  const name=document.getElementById('quizName').value.trim();
+  if(!name){alert('اكتبي اسم المتسابقة أولًا');return}
+  localStorage.setItem('studentName',name);
+  let score=0;
+  quizData.forEach((item,i)=>{
+    const chosen=document.querySelector(`input[name="q${i}"]:checked`);
+    if(chosen && Number(chosen.value)===item.c) score++;
+  });
+  document.getElementById('score').innerHTML=`
+      <div style="text-align:center;line-height:2">
+        <div style="font-size:26px">🌱 أحسنتِ!</div>
+        <div style="font-size:21px;font-weight:700">أكملتِ رحلة «كيمياء وطن أخضر»</div>
+        <div>نتيجتك ${score} من ${quizData.length}</div>
+        <div style="margin-top:8px">والآن حان وقت ترك أثركِ…</div>
+        <button class="primary" style="margin-top:12px" onclick="show('pledge')">📜 ميثاق الاستدامة</button>
+      </div>`;
+  updatePledge();
+}
+function renderGallery(){
+  const grid=document.getElementById('galleryGrid');
+  grid.innerHTML='<p>تظهر هنا المشاركات المعتمدة من المعلمة عند ربط المعرض بمصدر المشاركات.</p>';
+}
+function renderTeacher(){
+  const box=document.getElementById('teacherList');
+  box.innerHTML='<p>لوحة الإشراف التجريبية. يمكن ربطها لاحقًا بمصدر المشاركات المعتمد.</p>';
+}
+function updatePledge(){
+  const n = localStorage.getItem('studentName') || '....................';
+  document.getElementById('pledgeDisplay').textContent = n;
+  const auto = document.getElementById('pledgeNameAuto');
+  if(auto) auto.textContent = n;
+}
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+renderQuiz();
+document.getElementById('today').textContent=new Date().toLocaleDateString('ar');
+const savedName=localStorage.getItem('studentName');
+if(savedName){updatePledge();}
+</script>
+</body>
+</html>

@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
-import { Submission, SubmissionCategory } from '@/types/database';
+import { Submission } from '@/types/database';
 import { INITIAL_APPROVED_SUBMISSIONS } from '@/lib/mock-submissions';
 import GalleryCard from '@/components/GalleryCard';
 import { 
   Sparkles, 
   Send, 
   Filter, 
-  Image as ImageIcon, 
   Search, 
   RefreshCw 
 } from 'lucide-react';
@@ -36,29 +34,16 @@ export default function GalleryView() {
   const fetchApprovedSubmissions = async () => {
     setIsLoading(true);
     try {
-      const supabase = createClient();
-      if (supabase) {
-        const { data, error } = await supabase
-          .from('submissions')
-          .select('*')
-          .eq('status', 'approved')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.warn('Supabase fetch note:', error.message);
-          setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
-        } else if (data && data.length > 0) {
-          setSubmissions(data as Submission[]);
+      const response = await fetch('/api/submissions');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.submissions && data.submissions.length > 0) {
+          setSubmissions(data.submissions);
         } else {
-          // If Supabase table is empty, show initial sample projects
           setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
         }
       } else {
-        // Fallback for local demo
-        const local = JSON.parse(localStorage.getItem('kimia_local_submissions') || '[]');
-        const approvedLocal = local.filter((s: any) => s.status === 'approved');
-        const combined = [...approvedLocal, ...INITIAL_APPROVED_SUBMISSIONS];
-        setSubmissions(combined);
+        setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
       }
     } catch (err) {
       console.error('Fetch error:', err);

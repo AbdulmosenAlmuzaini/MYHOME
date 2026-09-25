@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { Submission, SubmissionStatus } from '@/types/database';
 import { INITIAL_APPROVED_SUBMISSIONS } from '@/lib/mock-submissions';
 import { 
@@ -38,41 +37,25 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
     const fetchSubmission = async () => {
       setIsLoading(true);
       try {
-        const supabase = createClient();
-        if (supabase) {
-          const { data, error } = await supabase
-            .from('submissions')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-          if (error) {
-            console.warn('Fetch submission note:', error.message);
-            loadFallback();
-          } else if (data) {
-            setSubmission(data as Submission);
-            setAdminNote(data.admin_note || '');
+        const res = await fetch(`/api/submissions/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.submission) {
+            setSubmission(data.submission);
+            setAdminNote(data.submission.admin_note || '');
           }
         } else {
-          loadFallback();
+          // Fallback to initial mock
+          const found = INITIAL_APPROVED_SUBMISSIONS.find((s) => s.id === id);
+          if (found) {
+            setSubmission(found);
+            setAdminNote(found.admin_note || '');
+          }
         }
       } catch (err) {
         console.error('Error fetching submission:', err);
-        loadFallback();
       } finally {
         setIsLoading(false);
-      }
-    };
-
-    const loadFallback = () => {
-      if (typeof window !== 'undefined') {
-        const local = JSON.parse(localStorage.getItem('kimia_local_submissions') || '[]');
-        const all = [...local, ...INITIAL_APPROVED_SUBMISSIONS];
-        const found = all.find((item) => item.id === id);
-        if (found) {
-          setSubmission(found);
-          setAdminNote(found.admin_note || '');
-        }
       }
     };
 
@@ -85,35 +68,21 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
     setFeedbackMessage(null);
 
     try {
-      const supabase = createClient();
-      if (supabase) {
-        const { error } = await supabase
-          .from('submissions')
-          .update({
-            status: newStatus,
-            admin_note: adminNote.trim() || null,
-            reviewed_at: new Date().toISOString(),
-          })
-          .eq('id', submission.id);
+      const response = await fetch(`/api/submissions/${submission.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          admin_note: adminNote.trim() || null,
+        }),
+      });
 
-        if (error) {
-          throw new Error(error.message);
-        }
-      } else {
-        // Update local mock
-        const local = JSON.parse(localStorage.getItem('kimia_local_submissions') || '[]');
-        const updatedLocal = local.map((s: Submission) => {
-          if (s.id === submission.id) {
-            return {
-              ...s,
-              status: newStatus,
-              admin_note: adminNote.trim() || null,
-              reviewed_at: new Date().toISOString(),
-            };
-          }
-          return s;
-        });
-        localStorage.setItem('kimia_local_submissions', JSON.stringify(updatedLocal));
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'فشل التحديث');
       }
 
       setSubmission((prev) => (prev ? { ...prev, status: newStatus, admin_note: adminNote.trim() || null } : null));

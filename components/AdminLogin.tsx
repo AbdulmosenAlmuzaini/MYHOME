@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { ShieldCheck, Lock, Mail, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -19,30 +18,25 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
-      if (supabase) {
-        const { data, error } = await supabase.auth.signInWithPassword({
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: email.trim(),
           password: password,
-        });
+        }),
+      });
 
-        if (error) {
-          throw new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
-        }
+      const data = await response.json();
 
-        if (data.session) {
-          router.push('/admin');
-          router.refresh();
-        }
-      } else {
-        // Mock login for offline/initial setup demo
-        if (email.trim() && password.length >= 6) {
-          localStorage.setItem('kimia_admin_mock_session', JSON.stringify({ email: email.trim() }));
-          router.push('/admin');
-        } else {
-          throw new Error('يرجى إدخال بريد إلكتروني صحيح وكلمة مرور لا تقل عن 6 خانات.');
-        }
+      if (!response.ok) {
+        throw new Error(data.error || 'البريد الإلكتروني أو كلمة المرور غير صحيحة.');
       }
+
+      router.push('/admin');
+      router.refresh();
     } catch (err: any) {
       console.error('Login error:', err);
       setErrorMessage(err.message || 'فشل تسجيل الدخول. يرجى التحقق من صحة البيانات.');
