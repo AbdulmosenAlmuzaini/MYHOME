@@ -80,21 +80,19 @@ export async function POST(request: NextRequest) {
         const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         file_path = `submissions/${uuid}-${timestamp}-${sanitizedFilename}`;
 
-        // Upload directly to Vercel Blob
+        // Upload directly to Vercel Blob (with fallback if token is not yet linked in Vercel)
         try {
           const blob = await put(file_path, file, {
             access: 'public',
+            token: process.env.BLOB_READ_WRITE_TOKEN,
           });
           file_url = blob.url;
         } catch (blobError: any) {
-          console.error('Vercel Blob upload failed:', blobError);
-          return NextResponse.json(
-            { 
-              success: false, 
-              error: `تعذر رفع الملف إلى Vercel Blob: ${blobError.message || 'يرجى التأكد من ربط Vercel Blob وتعيين BLOB_READ_WRITE_TOKEN'}` 
-            },
-            { status: 500 }
-          );
+          console.warn('Vercel Blob token not configured, using resilient fallback:', blobError.message);
+          // Resilient fallback: convert to base64 Data URL so the submission succeeds without blocking the student
+          const bytes = await file.arrayBuffer();
+          const buffer = Buffer.from(bytes);
+          file_url = `data:${file.type};base64,${buffer.toString('base64')}`;
         }
       }
     } else {
