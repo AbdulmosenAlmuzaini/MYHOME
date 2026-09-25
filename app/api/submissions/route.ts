@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql, ensureDatabaseTables } from '@/lib/db';
+import { getSubmissions, insertSubmission } from '@/lib/db';
 import { getAdminSession } from '@/lib/auth';
 import { INITIAL_APPROVED_SUBMISSIONS } from '@/lib/mock-submissions';
 
@@ -8,35 +8,21 @@ export async function GET(request: NextRequest) {
   const requestedAll = searchParams.get('all') === 'true';
 
   try {
-    await ensureDatabaseTables();
     const session = await getAdminSession();
+    const onlyApproved = !(requestedAll && session);
 
-    if (requestedAll && session) {
-      // Admin requesting all submissions
-      const result = await sql`
-        SELECT * FROM submissions ORDER BY created_at DESC;
-      `;
-      return NextResponse.json({ submissions: result.rows });
-    } else {
-      // Public requesting only approved submissions
-      const result = await sql`
-        SELECT * FROM submissions WHERE status = 'approved' ORDER BY created_at DESC;
-      `;
+    const rows = await getSubmissions(onlyApproved);
+    const data = rows && rows.length > 0 ? rows : INITIAL_APPROVED_SUBMISSIONS;
 
-      // If database is empty, return initial mock submissions
-      const data = result.rows.length > 0 ? result.rows : INITIAL_APPROVED_SUBMISSIONS;
-      return NextResponse.json({ submissions: data });
-    }
+    return NextResponse.json({ submissions: data });
   } catch (error) {
-    console.warn('Postgres query fallback to mock data:', error);
-    // Graceful fallback for local development before Vercel Postgres is connected
+    console.warn('Postgres query fallback:', error);
     return NextResponse.json({ submissions: INITIAL_APPROVED_SUBMISSIONS });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    await ensureDatabaseTables();
     const body = await request.json();
     const { student_name, title, description, category, file_url, file_path } = body;
 
@@ -53,10 +39,15 @@ export async function POST(request: NextRequest) {
     const fPath = file_path || null;
 
     try {
-      await sql`
-        INSERT INTO submissions (id, student_name, title, description, category, file_url, file_path, status, created_at)
-        VALUES (${id}, ${student_name}, ${title}, ${description}, ${cat}, ${fUrl}, ${fPath}, 'pending', NOW());
-      `;
+      await insertSubmission({
+        id,
+        student_name,
+        title,
+        description,
+        category: cat,
+        file_url: fUrl,
+        file_path: fPath,
+      });
     } catch (dbErr) {
       console.warn('Database insert note:', dbErr);
     }
