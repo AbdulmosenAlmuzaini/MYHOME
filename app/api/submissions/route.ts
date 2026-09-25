@@ -17,10 +17,19 @@ const ALLOWED_MIME_TYPES = [
 export async function GET() {
   try {
     const rows = await getApprovedSubmissions();
-    return NextResponse.json({ 
-      success: true,
-      submissions: rows || [] 
-    });
+    return NextResponse.json(
+      { 
+        success: true,
+        submissions: rows || [] 
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      }
+    );
   } catch (error: any) {
     console.error('Error fetching approved submissions:', error);
     return NextResponse.json(
@@ -42,7 +51,6 @@ export async function POST(request: NextRequest) {
     let file_path: string | null = null;
 
     if (contentType.includes('multipart/form-data')) {
-      // Direct Multipart Form Data handling
       const formData = await request.formData();
       student_name = (formData.get('student_name') as string) || '';
       title = (formData.get('title') as string) || '';
@@ -54,7 +62,7 @@ export async function POST(request: NextRequest) {
       if (file && file.size > 0) {
         if (!ALLOWED_MIME_TYPES.includes(file.type)) {
           return NextResponse.json(
-            { success: false, error: 'نوع الملف غير مدعوم. الصيغ المسموحة: JPG, PNG, WEBP, PDF.' },
+            { success: false, error: 'نوع الملف غير مدعوم. الصيغ المسموحة: JPG, JPEG, PNG, WEBP, PDF.' },
             { status: 400 }
           );
         }
@@ -72,18 +80,21 @@ export async function POST(request: NextRequest) {
         const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         file_path = `submissions/${uuid}-${timestamp}-${sanitizedFilename}`;
 
-        // Upload to Vercel Blob
+        // Upload directly to Vercel Blob
         try {
           const blob = await put(file_path, file, {
             access: 'public',
           });
           file_url = blob.url;
         } catch (blobError: any) {
-          console.warn('Vercel Blob upload warning:', blobError.message);
-          // Fallback if Blob token is missing locally: convert to Base64
-          const bytes = await file.arrayBuffer();
-          const buffer = Buffer.from(bytes);
-          file_url = `data:${file.type};base64,${buffer.toString('base64')}`;
+          console.error('Vercel Blob upload failed:', blobError);
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: `تعذر رفع الملف إلى Vercel Blob: ${blobError.message || 'يرجى التأكد من ربط Vercel Blob وتعيين BLOB_READ_WRITE_TOKEN'}` 
+            },
+            { status: 500 }
+          );
         }
       }
     } else {
@@ -112,7 +123,7 @@ export async function POST(request: NextRequest) {
     const uniqueId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
     // Save record to Neon Postgres with status = 'pending'
-    const insertResult = await insertSubmission({
+    await insertSubmission({
       id: uniqueId,
       student_name: trimmedName,
       title: trimmedTitle,
@@ -124,17 +135,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'تم استلام مشاركتك بنجاح وستتم مراجعتها قبل ظهورها في المعرض.',
       submission: {
         id: uniqueId,
         student_name: trimmedName,
         title: trimmedTitle,
-        description: trimmedDesc,
-        category: category.trim(),
         file_url: file_url,
-        file_path: file_path,
         status: 'pending',
-        created_at: new Date().toISOString(),
       },
     });
   } catch (error: any) {

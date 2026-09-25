@@ -7,9 +7,22 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const rows = await getApprovedSubmissions();
-    return NextResponse.json({ submissions: rows || [] });
+    return NextResponse.json(
+      { 
+        success: true,
+        submissions: rows || [] 
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      }
+    );
   } catch (error) {
     console.error('Error fetching approved submissions:', error);
-    return NextResponse.json({ submissions: [] });
+    return NextResponse.json({ success: false, submissions: [] }, { status: 500 });
   }
 }
+
