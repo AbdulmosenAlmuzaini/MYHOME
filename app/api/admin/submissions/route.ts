@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllSubmissions } from '@/lib/db';
 import { getAdminSession } from '@/lib/auth';
 
-// GET /api/admin/submissions -> returns all submissions (pending, approved, rejected, needs_edit) for supervisors
+export const dynamic = 'force-dynamic';
+
+// GET /api/admin/submissions -> returns all submissions for supervisors
 export async function GET(request: NextRequest) {
   try {
     const session = await getAdminSession();

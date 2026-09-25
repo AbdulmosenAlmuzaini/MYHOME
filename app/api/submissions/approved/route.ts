@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getApprovedSubmissions } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/submissions/approved -> Returns ONLY status = 'approved' from Neon Postgres
 export async function GET() {
   try {

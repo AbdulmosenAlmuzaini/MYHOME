@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { queryDatabase, updateSubmissionStatus } from '@/lib/db';
 import { getAdminSession } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 interface Params {
   params: {
     id: string;
