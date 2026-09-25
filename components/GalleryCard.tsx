@@ -1,126 +1,166 @@
 'use client';
 
+import { useState } from 'react';
 import { Submission } from '@/types/database';
-import { User, CheckCircle, Tag, FileText, ExternalLink, Calendar } from 'lucide-react';
+import { User, CheckCircle, Tag, FileText, ExternalLink, Calendar, Maximize2, X } from 'lucide-react';
 
 interface GalleryCardProps {
   submission: Submission;
 }
 
 export default function GalleryCard({ submission }: GalleryCardProps) {
-  const isPdf = 
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+
+  // Check if the uploaded file is a PDF
+  const isPdf = Boolean(
     submission.file_url?.toLowerCase().endsWith('.pdf') || 
     submission.file_path?.toLowerCase().endsWith('.pdf') ||
-    submission.file_url?.startsWith('data:application/pdf');
+    submission.file_url?.includes('application/pdf') ||
+    submission.file_url?.startsWith('data:application/pdf')
+  );
 
+  const hasImage = Boolean(submission.file_url && !isPdf);
+
+  // Format Arabic Date
   const formattedDate = submission.created_at
     ? new Date(submission.created_at).toLocaleDateString('ar-SA', {
         year: 'numeric',
-        month: 'short',
+        month: 'long',
         day: 'numeric',
       })
     : '';
 
   return (
-    <article className="glass-card rounded-3xl overflow-hidden border border-emerald-100/90 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between bg-white group">
-      
-      <div>
-        {/* Card Image / Media Preview Header */}
-        {submission.file_url && !isPdf ? (
-          <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-emerald-950">
-            <img
-              src={submission.file_url}
-              alt={submission.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-            <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-700/90 backdrop-blur-md text-white text-xs font-bold shadow-sm">
-              <Tag className="w-3 h-3 text-amber-300" />
-              <span>{submission.category}</span>
-            </span>
-          </div>
-        ) : (
-          <div className="relative h-32 sm:h-36 w-full bg-gradient-to-br from-emerald-800 to-saudi-dark p-6 flex items-center justify-between text-white">
-            <div className="space-y-1">
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold">
-                <Tag className="w-3 h-3 text-amber-300" />
+    <>
+      <article className="glass-card rounded-3xl overflow-hidden border border-emerald-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between bg-white group">
+        
+        <div>
+          {/* 1. Image Header (Full width at the top, only if student uploaded an image) */}
+          {hasImage && submission.file_url && (
+            <div className="relative w-full h-60 sm:h-64 overflow-hidden bg-slate-100 cursor-pointer group/img" onClick={() => setIsImageModalOpen(true)}>
+              <img
+                src={submission.file_url}
+                alt={submission.title}
+                className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
+                loading="lazy"
+              />
+              
+              {/* Overlay hover hint */}
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                <span className="bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-900 shadow-md flex items-center gap-1.5">
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>تكبير الصورة</span>
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* 2. PDF Attachment Header (If uploaded file is PDF) */}
+          {isPdf && submission.file_url && (
+            <div className="p-4 bg-emerald-50/80 border-b border-emerald-100 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
+                <FileText className="w-5 h-5 text-emerald-700" />
+                <span>📄 ملف مرفق (PDF)</span>
+              </div>
+              <a
+                href={submission.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors"
+              >
+                <span>عرض الملف</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          )}
+
+          {/* 3. Card Information Details */}
+          <div className="p-6 space-y-4">
+            
+            {/* Student Name */}
+            <div>
+              <span className="text-xs font-bold text-slate-400 block mb-0.5">اسم الطالبة:</span>
+              <div className="flex items-center gap-2 text-base sm:text-lg font-black text-emerald-900">
+                <User className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{submission.student_name}</span>
+              </div>
+            </div>
+
+            {/* Submission Title */}
+            <div>
+              <span className="text-xs font-bold text-slate-400 block mb-0.5">عنوان المشاركة:</span>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                {submission.title}
+              </h3>
+            </div>
+
+            {/* Submission Category */}
+            <div>
+              <span className="text-xs font-bold text-slate-400 block mb-1">نوع المشاركة:</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                <Tag className="w-3 h-3 text-emerald-600" />
                 <span>{submission.category}</span>
               </span>
             </div>
 
-            {isPdf && submission.file_url ? (
-              <a
-                href={submission.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md transition-colors"
-                title="عرض ملف المشاركة"
-              >
-                <FileText className="w-4 h-4" />
-                <span>📄 عرض ملف المشاركة</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            ) : (
-              <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-emerald-200">
-                <span className="text-2xl">🌱</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Card Body */}
-        <div className="p-6">
-          
-          {/* Student Name & Date */}
-          <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mb-3">
-            <div className="flex items-center gap-1.5 font-bold text-emerald-800">
-              <User className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{submission.student_name}</span>
+            {/* Submission Description */}
+            <div>
+              <span className="text-xs font-bold text-slate-400 block mb-1">وصف المشاركة:</span>
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50/70 p-3.5 rounded-2xl border border-slate-100">
+                {submission.description}
+              </p>
             </div>
+
+            {/* Submission Date */}
             {formattedDate && (
-              <div className="flex items-center gap-1 text-slate-400">
-                <Calendar className="w-3 h-3" />
-                <span>{formattedDate}</span>
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 pt-1">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span className="font-medium">تاريخ المشاركة: {formattedDate}</span>
               </div>
             )}
+
           </div>
+        </div>
 
-          {/* Submission Title */}
-          <h3 className="text-lg sm:text-xl font-bold text-slate-900 group-hover:text-emerald-700 transition-colors mb-3 leading-snug">
-            {submission.title}
-          </h3>
+        {/* 4. Footer Badge */}
+        <div className="px-6 py-3.5 bg-emerald-50/90 border-t border-emerald-100 flex items-center justify-between text-xs font-bold text-emerald-800">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle className="w-4 h-4 text-emerald-600 fill-emerald-100" />
+            <span>✅ مشاركة معتمدة — كيمياء وطن أخضر</span>
+          </div>
+        </div>
 
-          {/* Submission Description */}
-          <p className="text-sm text-slate-600 leading-relaxed line-clamp-4">
-            {submission.description}
-          </p>
+      </article>
 
-          {/* PDF Button if PDF and no top preview */}
-          {isPdf && submission.file_url && (
-            <div className="mt-4 pt-3 border-t border-slate-100">
-              <a
-                href={submission.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
-              >
-                <FileText className="w-4 h-4 text-emerald-600" />
-                <span>📄 عرض ملف المشاركة في تبويب جديد ↗</span>
-              </a>
+      {/* Image Preview Modal (Lightbox) */}
+      {isImageModalOpen && hasImage && submission.file_url && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in"
+          onClick={() => setIsImageModalOpen(false)}
+        >
+          <div 
+            className="relative max-w-4xl max-h-[90vh] bg-white rounded-3xl overflow-hidden shadow-2xl p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsImageModalOpen(false)}
+              className="absolute top-4 left-4 z-10 p-2.5 rounded-full bg-slate-900/70 text-white hover:bg-slate-900 transition-colors shadow-lg"
+              title="إغلاق"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img
+              src={submission.file_url}
+              alt={submission.title}
+              className="max-h-[80vh] w-auto object-contain rounded-2xl mx-auto"
+            />
+            <div className="p-4 text-center">
+              <h4 className="font-bold text-slate-900 text-base">{submission.title}</h4>
+              <p className="text-xs text-slate-500 mt-1">مشاركة الطالبة: {submission.student_name}</p>
             </div>
-          )}
+          </div>
         </div>
-      </div>
-
-      {/* Card Footer Badge */}
-      <div className="px-6 py-3.5 bg-emerald-50/70 border-t border-emerald-100 flex items-center justify-between text-xs font-bold text-emerald-800">
-        <div className="flex items-center gap-1.5">
-          <CheckCircle className="w-4 h-4 text-emerald-600 fill-emerald-100" />
-          <span>✅ مشاركة معتمدة — كيمياء وطن أخضر</span>
-        </div>
-      </div>
-
-    </article>
+      )}
+    </>
   );
 }
