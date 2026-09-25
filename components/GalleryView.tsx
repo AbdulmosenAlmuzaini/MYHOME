@@ -33,8 +33,8 @@ export default function GalleryView() {
   const fetchApprovedSubmissions = async () => {
     setIsLoading(true);
     try {
-      // Real database fetch only
-      const response = await fetch('/api/submissions/approved', {
+      // Fetch fresh live database records bypassing cache
+      const response = await fetch(`/api/submissions/approved?t=${Date.now()}`, {
         cache: 'no-store',
       });
       if (response.ok) {
@@ -140,7 +140,7 @@ export default function GalleryView() {
           ))}
         </div>
       ) : filteredSubmissions.length > 0 ? (
-        /* Real Gallery Cards Grid */
+        /* Real Gallery Cards Grid (3 on desktop, 2 on tablet, 1 on mobile) */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {filteredSubmissions.map((submission) => (
             <GalleryCard key={submission.id} submission={submission} />

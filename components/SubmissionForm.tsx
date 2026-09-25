@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { SubmissionCategory } from '@/types/database';
 import { 
   Send, 
@@ -12,7 +14,9 @@ import {
   Loader2, 
   X, 
   Sparkles,
-  Info
+  Info,
+  RotateCcw,
+  ExternalLink
 } from 'lucide-react';
 
 const CATEGORIES: SubmissionCategory[] = [
@@ -37,6 +41,7 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 export default function SubmissionForm() {
+  const router = useRouter();
   const [studentName, setStudentName] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -45,7 +50,7 @@ export default function SubmissionForm() {
   const [filePreview, setFilePreview] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -95,10 +100,20 @@ export default function SubmissionForm() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handleResetForm = () => {
+    setTitle('');
+    setDescription('');
+    setSelectedFile(null);
+    setFilePreview(null);
+    setCategory('إعادة تدوير');
+    setErrorMessage('');
+    setIsSuccessModalOpen(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    setSuccessMessage(false);
 
     const trimmedName = studentName.trim();
     const trimmedTitle = title.trim();
@@ -112,68 +127,39 @@ export default function SubmissionForm() {
     setIsLoading(true);
 
     try {
-      // Save name only for convenience in UI
+      // Save name in localStorage for convenience
       if (typeof window !== 'undefined') {
         localStorage.setItem('kimia_student_name', trimmedName);
       }
 
-      let uploadedFileUrl: string | null = null;
-      let uploadedFilePath: string | null = null;
+      // Send multipart form data directly to /api/submissions
+      const formData = new FormData();
+      formData.append('student_name', trimmedName);
+      formData.append('title', trimmedTitle);
+      formData.append('description', trimmedDesc);
+      formData.append('category', category);
 
-      // 1. Upload file to Vercel Blob if selected
       if (selectedFile) {
-        const formData = new FormData();
         formData.append('file', selectedFile);
-
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!uploadRes.ok) {
-          const uploadErrData = await uploadRes.json();
-          throw new Error(uploadErrData.error || 'فشل رفع الملف إلى مساحة التخزين.');
-        }
-
-        const uploadData = await uploadRes.json();
-        uploadedFileUrl = uploadData.url;
-        uploadedFilePath = uploadData.pathname;
       }
 
-      // 2. Submit record to server API
       const response = await fetch('/api/submissions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          student_name: trimmedName,
-          title: trimmedTitle,
-          description: trimmedDesc,
-          category: category,
-          file_url: uploadedFileUrl,
-          file_path: uploadedFilePath,
-        }),
+        body: formData,
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'فشل إرسال المشاركة إلى قاعدة البيانات.');
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'تعذر إرسال المشاركة، يرجى المحاولة مرة أخرى.');
       }
 
-      // 3. Clear inputs, reset category, keep student name
-      setSuccessMessage(true);
-      setTitle('');
-      setDescription('');
-      setSelectedFile(null);
-      setFilePreview(null);
-      setCategory('إعادة تدوير');
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      // Only show success modal AFTER everything succeeds on the server
+      setIsSuccessModalOpen(true);
 
     } catch (err: any) {
       console.error('Submission failed:', err);
-      setErrorMessage(err.message || 'حدث خطأ أثناء إرسال المشاركة. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.');
+      setErrorMessage(err.message || 'تعذر إرسال المشاركة، يرجى المحاولة مرة أخرى.');
     } finally {
       setIsLoading(false);
     }
@@ -205,25 +191,6 @@ export default function SubmissionForm() {
           </p>
         </div>
       </div>
-
-      {/* Success Notification Alert */}
-      {successMessage && (
-        <div className="bg-emerald-50 border-2 border-emerald-400 text-emerald-950 p-6 rounded-3xl mb-8 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-emerald-900 mb-1">
-                🌱 وصلت مشاركتكِ بنجاح!
-              </h3>
-              <p className="text-sm text-emerald-800 font-medium leading-relaxed">
-                سيتم مراجعتها واعتمادها من قبل المشرفات قبل ظهورها في المعرض. شكرًا لعطائكِ المستدام ودوركِ الفاعل في كيمياء وطن أخضر!
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Error Alert */}
       {errorMessage && (
@@ -401,6 +368,60 @@ export default function SubmissionForm() {
 
         </form>
       </div>
+
+      {/* Success Modal Popup */}
+      {isSuccessModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white rounded-3xl p-8 sm:p-10 max-w-lg w-full shadow-2xl border border-emerald-100 text-center relative overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Header Icon */}
+            <div className="w-20 h-20 mx-auto rounded-3xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-6 shadow-inner">
+              <span className="text-4xl select-none" role="img" aria-label="نبات">🌱</span>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-2xl sm:text-3xl font-black text-saudi-dark mb-3">
+              تم إرسال مشاركتكِ بنجاح!
+            </h2>
+
+            {/* Slogan */}
+            <p className="text-base sm:text-lg font-bold text-amber-800 mb-3">
+              شكرًا لمساهمتكِ في صنع أثر مستدام 🌱
+            </p>
+
+            {/* Details */}
+            <p className="text-sm text-slate-600 leading-relaxed mb-6">
+              تم استلام مشاركتكِ وسيتم مراجعتها واعتمادها من قبل المشرفات قبل ظهورها في المعرض.
+            </p>
+
+            {/* Note badge */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 mb-8 text-xs font-semibold text-emerald-800 flex items-center justify-center gap-2">
+              <Info className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>ستظهر مشاركتكِ في المعرض مباشرة بعد اعتمادها.</span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                href="/gallery"
+                className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base shadow-lg shadow-emerald-700/20 transition-all active:scale-95"
+              >
+                <span>🖼️ الانتقال إلى المعرض</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleResetForm}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>↻ إضافة مشاركة أخرى</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -17,7 +17,7 @@ export async function queryDatabase(queryText, params = []) {
     return res.rows || [];
   } catch (err) {
     console.error('Database query error:', err);
-    return [];
+    throw err;
   }
 }
 
@@ -40,12 +40,13 @@ export async function ensureDatabaseTables() {
         admin_note TEXT NULL
       );
     `;
-    await queryDatabase(createTableQuery);
+    const pool = new Pool({ connectionString });
+    await pool.query(createTableQuery);
 
     const createIndexQuery = `
       CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status);
     `;
-    await queryDatabase(createIndexQuery);
+    await pool.query(createIndexQuery);
   } catch (err) {
     console.error('Error ensuring database tables:', err);
   }
@@ -58,7 +59,11 @@ export async function getApprovedSubmissions() {
     WHERE status = 'approved' 
     ORDER BY created_at DESC;
   `;
-  return queryDatabase(query);
+  try {
+    return await queryDatabase(query);
+  } catch {
+    return [];
+  }
 }
 
 export async function getAllSubmissions() {
@@ -67,7 +72,11 @@ export async function getAllSubmissions() {
     SELECT * FROM submissions 
     ORDER BY created_at DESC;
   `;
-  return queryDatabase(query);
+  try {
+    return await queryDatabase(query);
+  } catch {
+    return [];
+  }
 }
 
 export async function insertSubmission({ id, student_name, title, description, category, file_url, file_path }) {
@@ -77,7 +86,7 @@ export async function insertSubmission({ id, student_name, title, description, c
     VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', CURRENT_TIMESTAMP)
     RETURNING *;
   `;
-  return queryDatabase(query, [
+  return await queryDatabase(query, [
     id,
     student_name,
     title,
@@ -98,5 +107,5 @@ export async function updateSubmissionStatus(id, status, admin_note, reviewed_by
     WHERE id = $3
     RETURNING *;
   `;
-  return queryDatabase(query, [status, admin_note, id]);
+  return await queryDatabase(query, [status, admin_note, id]);
 }

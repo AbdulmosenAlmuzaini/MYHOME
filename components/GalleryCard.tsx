@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Submission } from '@/types/database';
-import { User, CheckCircle, Tag, FileText, ExternalLink, Calendar, Maximize2, X } from 'lucide-react';
+import { User, CheckCircle, Tag, FileText, ExternalLink, Calendar, Maximize2, X, ImageOff } from 'lucide-react';
 
 interface GalleryCardProps {
   submission: Submission;
@@ -10,6 +10,7 @@ interface GalleryCardProps {
 
 export default function GalleryCard({ submission }: GalleryCardProps) {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   // Check if the uploaded file is a PDF
   const isPdf = Boolean(
@@ -30,6 +31,11 @@ export default function GalleryCard({ submission }: GalleryCardProps) {
       })
     : '';
 
+  const handleImageError = () => {
+    console.warn('Image load error for submission ID:', submission.id, 'URL:', submission.file_url);
+    setImageError(true);
+  };
+
   return (
     <>
       <article className="glass-card rounded-3xl overflow-hidden border border-emerald-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between bg-white group">
@@ -37,21 +43,34 @@ export default function GalleryCard({ submission }: GalleryCardProps) {
         <div>
           {/* 1. Image Header (Full width at the top, only if student uploaded an image) */}
           {hasImage && submission.file_url && (
-            <div className="relative w-full h-60 sm:h-64 overflow-hidden bg-slate-100 cursor-pointer group/img" onClick={() => setIsImageModalOpen(true)}>
-              <img
-                src={submission.file_url}
-                alt={submission.title}
-                className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
-                loading="lazy"
-              />
-              
-              {/* Overlay hover hint */}
-              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                <span className="bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-900 shadow-md flex items-center gap-1.5">
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  <span>تكبير الصورة</span>
-                </span>
-              </div>
+            <div className="relative w-full h-[250px] overflow-hidden bg-slate-100">
+              {!imageError ? (
+                <div 
+                  className="w-full h-full cursor-pointer group/img relative"
+                  onClick={() => setIsImageModalOpen(true)}
+                >
+                  <img
+                    src={submission.file_url}
+                    alt={submission.title}
+                    onError={handleImageError}
+                    className="w-full h-[250px] object-cover group-hover/img:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  
+                  {/* Overlay hover hint */}
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-900 shadow-md flex items-center gap-1.5">
+                      <Maximize2 className="w-3.5 h-3.5" />
+                      <span>تكبير الصورة</span>
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-slate-100 text-slate-400">
+                  <ImageOff className="w-8 h-8 mb-2 text-slate-300" />
+                  <span className="text-xs font-bold">تعذر تحميل الصورة</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -60,7 +79,7 @@ export default function GalleryCard({ submission }: GalleryCardProps) {
             <div className="p-4 bg-emerald-50/80 border-b border-emerald-100 flex items-center justify-between">
               <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
                 <FileText className="w-5 h-5 text-emerald-700" />
-                <span>📄 ملف مرفق (PDF)</span>
+                <span>📄 ملف مرفق</span>
               </div>
               <a
                 href={submission.file_url}
@@ -133,7 +152,7 @@ export default function GalleryCard({ submission }: GalleryCardProps) {
       </article>
 
       {/* Image Preview Modal (Lightbox) */}
-      {isImageModalOpen && hasImage && submission.file_url && (
+      {isImageModalOpen && hasImage && submission.file_url && !imageError && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in"
           onClick={() => setIsImageModalOpen(false)}
