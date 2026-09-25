@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Submission } from '@/types/database';
-import { INITIAL_APPROVED_SUBMISSIONS } from '@/lib/mock-submissions';
 import GalleryCard from '@/components/GalleryCard';
 import { 
   Sparkles, 
@@ -34,20 +33,19 @@ export default function GalleryView() {
   const fetchApprovedSubmissions = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/submissions');
+      // Real database fetch only
+      const response = await fetch('/api/submissions/approved', {
+        cache: 'no-store',
+      });
       if (response.ok) {
         const data = await response.json();
-        if (data.submissions && data.submissions.length > 0) {
-          setSubmissions(data.submissions);
-        } else {
-          setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
-        }
+        setSubmissions(data.submissions || []);
       } else {
-        setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
+        setSubmissions([]);
       }
     } catch (err) {
       console.error('Fetch error:', err);
-      setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
+      setSubmissions([]);
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +127,7 @@ export default function GalleryView() {
       {isLoading ? (
         /* Skeleton Loaders */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+          {[1, 2, 3].map((i) => (
             <div
               key={i}
               className="bg-white rounded-3xl overflow-hidden border border-slate-200 p-6 space-y-4 animate-pulse"
@@ -142,7 +140,7 @@ export default function GalleryView() {
           ))}
         </div>
       ) : filteredSubmissions.length > 0 ? (
-        /* Gallery Cards Grid */
+        /* Real Gallery Cards Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {filteredSubmissions.map((submission) => (
             <GalleryCard key={submission.id} submission={submission} />
@@ -156,11 +154,11 @@ export default function GalleryView() {
           </div>
 
           <h3 className="text-xl sm:text-2xl font-black text-saudi-dark mb-2">
-            لا توجد مشاركات معتمدة حتى الآن
+            🌱 لا توجد مشاركات معتمدة حتى الآن.
           </h3>
 
           <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-8">
-            كوني أول من يترك أثرًا مستدامًا ويشاركنا مبادرة كيميائية متميزة!
+            كوني أول من يترك أثرًا مستدامًا.
           </p>
 
           <Link

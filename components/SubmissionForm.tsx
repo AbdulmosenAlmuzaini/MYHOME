@@ -105,14 +105,14 @@ export default function SubmissionForm() {
     const trimmedDesc = description.trim();
 
     if (!trimmedName || !trimmedTitle || !trimmedDesc) {
-      setErrorMessage('يرجى ملء جميع الحقول الإلزامية.');
+      setErrorMessage('يرجى ملء جميع الحقول المطلوبة (اسم الطالبة، عنوان المشاركة، وصف المشاركة).');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Save name in localStorage for convenience
+      // Save name only for convenience in UI
       if (typeof window !== 'undefined') {
         localStorage.setItem('kimia_student_name', trimmedName);
       }
@@ -120,7 +120,7 @@ export default function SubmissionForm() {
       let uploadedFileUrl: string | null = null;
       let uploadedFilePath: string | null = null;
 
-      // 1. Upload file via Vercel Blob API if attached
+      // 1. Upload file to Vercel Blob if selected
       if (selectedFile) {
         const formData = new FormData();
         formData.append('file', selectedFile);
@@ -130,14 +130,17 @@ export default function SubmissionForm() {
           body: formData,
         });
 
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          uploadedFileUrl = uploadData.url;
-          uploadedFilePath = uploadData.pathname;
+        if (!uploadRes.ok) {
+          const uploadErrData = await uploadRes.json();
+          throw new Error(uploadErrData.error || 'فشل رفع الملف إلى مساحة التخزين.');
         }
+
+        const uploadData = await uploadRes.json();
+        uploadedFileUrl = uploadData.url;
+        uploadedFilePath = uploadData.pathname;
       }
 
-      // 2. Submit record to Vercel Postgres API
+      // 2. Submit record to server API
       const response = await fetch('/api/submissions', {
         method: 'POST',
         headers: {
@@ -148,7 +151,7 @@ export default function SubmissionForm() {
           title: trimmedTitle,
           description: trimmedDesc,
           category: category,
-          file_url: uploadedFileUrl || filePreview,
+          file_url: uploadedFileUrl,
           file_path: uploadedFilePath,
         }),
       });
@@ -156,20 +159,21 @@ export default function SubmissionForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'فشل إرسال المشاركة');
+        throw new Error(data.error || 'فشل إرسال المشاركة إلى قاعدة البيانات.');
       }
 
-      // Successful submission
+      // 3. Clear inputs, reset category, keep student name
       setSuccessMessage(true);
       setTitle('');
       setDescription('');
       setSelectedFile(null);
       setFilePreview(null);
+      setCategory('إعادة تدوير');
       if (fileInputRef.current) fileInputRef.current.value = '';
 
     } catch (err: any) {
       console.error('Submission failed:', err);
-      setErrorMessage('حدث خطأ أثناء إرسال المشاركة. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.');
+      setErrorMessage(err.message || 'حدث خطأ أثناء إرسال المشاركة. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.');
     } finally {
       setIsLoading(false);
     }
@@ -295,7 +299,7 @@ export default function SubmissionForm() {
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="اكتبي وصفًا مختصرًا لما قمتِ به وكيف يسهم في الاستدامة وحماية بيئة وطننا..."
+              placeholder="اكتبي وصفًا مختصرًا لما قمتِ به وكيف يسهم في الاستدامة..."
               className="w-full px-4 py-3.5 rounded-2xl border border-slate-300 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100 outline-none text-slate-800 text-base font-medium transition-all resize-y"
             />
           </div>
@@ -303,7 +307,7 @@ export default function SubmissionForm() {
           {/* File / Image Upload Box */}
           <div>
             <label className="block text-sm font-bold text-slate-800 mb-2">
-              رفع صورة أو ملف التوثيق <span className="text-xs font-normal text-slate-500">(اختياري - حتى 5MB)</span>
+              رفع صورة أو ملف <span className="text-xs font-normal text-slate-500">(JPG, JPEG, PNG, WEBP, PDF - حتى 5MB)</span>
             </label>
 
             <div className="border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/30 rounded-2xl p-6 text-center transition-all">
@@ -385,7 +389,7 @@ export default function SubmissionForm() {
             {isLoading ? (
               <>
                 <Loader2 className="w-6 h-6 animate-spin" />
-                <span>جاري إرسال المشاركة والرفع...</span>
+                <span>جارٍ إرسال المشاركة...</span>
               </>
             ) : (
               <>

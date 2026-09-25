@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Submission, SubmissionStatus } from '@/types/database';
-import { INITIAL_APPROVED_SUBMISSIONS } from '@/lib/mock-submissions';
 import { 
   ArrowRight, 
   CheckCircle2, 
@@ -37,7 +36,7 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
     const fetchSubmission = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/submissions/${id}`);
+        const res = await fetch(`/api/admin/submissions/${id}`);
         if (res.ok) {
           const data = await res.json();
           if (data.submission) {
@@ -45,15 +44,11 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
             setAdminNote(data.submission.admin_note || '');
           }
         } else {
-          // Fallback to initial mock
-          const found = INITIAL_APPROVED_SUBMISSIONS.find((s) => s.id === id);
-          if (found) {
-            setSubmission(found);
-            setAdminNote(found.admin_note || '');
-          }
+          setSubmission(null);
         }
       } catch (err) {
         console.error('Error fetching submission:', err);
+        setSubmission(null);
       } finally {
         setIsLoading(false);
       }
@@ -68,7 +63,7 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
     setFeedbackMessage(null);
 
     try {
-      const response = await fetch(`/api/submissions/${submission.id}`, {
+      const response = await fetch(`/api/admin/submissions/${submission.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -82,14 +77,14 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'فشل التحديث');
+        throw new Error(data.error || 'فشل تحديث حالة المشاركة في قاعدة البيانات.');
       }
 
       setSubmission((prev) => (prev ? { ...prev, status: newStatus, admin_note: adminNote.trim() || null } : null));
       setShowRejectConfirm(false);
 
       const statusLabels: Record<SubmissionStatus, string> = {
-        approved: 'تم اعتماد المشاركة بنجاح وستظهر في المعرض العام ✨',
+        approved: 'تم اعتماد المشاركة بنجاح وستظهر الآن في المعرض العام ✨',
         needs_edit: 'تم تغيير الحالة إلى "تحتاج تعديل" وحفظ الملاحظة ✍️',
         rejected: 'تم رفض المشاركة وتحديث السجل ❌',
         pending: 'تم تعيين الحالة كقيد المراجعة ⏳',
@@ -104,7 +99,7 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
       console.error('Update status error:', err);
       setFeedbackMessage({
         type: 'error',
-        text: 'فشل تحديث حالة المشاركة. يرجى المحاولة مرة أخرى.',
+        text: err.message || 'فشل تحديث حالة المشاركة. يرجى المحاولة مرة أخرى.',
       });
     } finally {
       setIsUpdating(false);
@@ -116,7 +111,7 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
         <div className="flex items-center gap-3 text-slate-600 font-bold">
           <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
-          <span>جاري تحميل تفاصيل المشاركة...</span>
+          <span>جاري تحميل تفاصيل المشاركة من قاعدة البيانات...</span>
         </div>
       </div>
     );
@@ -125,7 +120,7 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
   if (!submission) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-8">
-        <h2 className="text-xl font-bold text-slate-800 mb-4">المشاركة غير موجودة</h2>
+        <h2 className="text-xl font-bold text-slate-800 mb-4">المشاركة غير موجودة في قاعدة البيانات</h2>
         <Link
           href="/admin"
           className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm"
@@ -136,7 +131,10 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
     );
   }
 
-  const isPdf = submission.file_url?.toLowerCase().endsWith('.pdf');
+  const isPdf = 
+    submission.file_url?.toLowerCase().endsWith('.pdf') || 
+    submission.file_path?.toLowerCase().endsWith('.pdf') ||
+    submission.file_url?.startsWith('data:application/pdf');
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
@@ -153,7 +151,7 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
           </Link>
 
           <span className="text-xs text-slate-500 font-mono">
-            ID: {submission.id.slice(0, 8)}...
+            ID: {submission.id}
           </span>
         </div>
 
@@ -245,8 +243,8 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
                     <div className="flex items-center gap-3">
                       <FileText className="w-8 h-8 text-amber-600" />
                       <div>
-                        <p className="text-sm font-bold text-slate-800">مستند توثيق PDF</p>
-                        <p className="text-xs text-slate-400">انقري لعرض أو تحميل الملف</p>
+                        <p className="text-sm font-bold text-slate-800">📄 مستند توثيق PDF</p>
+                        <p className="text-xs text-slate-400">انقري لعرض أو تحميل الملف في تبويب جديد</p>
                       </div>
                     </div>
                     <a
@@ -255,7 +253,7 @@ export default function AdminSubmissionReview({ id }: AdminSubmissionReviewProps
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm"
                     >
-                      <span>فتح المستند</span>
+                      <span>📄 عرض ملف المشاركة</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>

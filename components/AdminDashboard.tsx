@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Submission, SubmissionStatus } from '@/types/database';
-import { INITIAL_APPROVED_SUBMISSIONS } from '@/lib/mock-submissions';
 import { 
   Shield, 
   LogOut, 
@@ -30,7 +29,7 @@ export default function AdminDashboard() {
   const fetchAllSubmissions = async () => {
     setIsLoading(true);
     try {
-      // 1. Verify session
+      // 1. Check session
       const meRes = await fetch('/api/admin/me');
       if (!meRes.ok) {
         router.push('/admin/login');
@@ -39,21 +38,17 @@ export default function AdminDashboard() {
       const meData = await meRes.json();
       setAdminEmail(meData.user?.email || null);
 
-      // 2. Fetch all submissions
-      const response = await fetch('/api/submissions?all=true');
+      // 2. Fetch all real submissions from database
+      const response = await fetch('/api/admin/submissions', { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
-        if (data.submissions) {
-          setSubmissions(data.submissions);
-        } else {
-          setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
-        }
+        setSubmissions(data.submissions || []);
       } else {
-        setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
+        setSubmissions([]);
       }
     } catch (err) {
       console.error('Error loading submissions:', err);
-      setSubmissions(INITIAL_APPROVED_SUBMISSIONS);
+      setSubmissions([]);
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +68,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Calculate statistics
+  // Calculate statistics from real data
   const totalCount = submissions.length;
   const pendingCount = submissions.filter((s) => s.status === 'pending').length;
   const approvedCount = submissions.filter((s) => s.status === 'approved').length;
@@ -277,7 +272,7 @@ export default function AdminDashboard() {
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-xs font-black uppercase">
                   <th className="p-4 sm:p-5">اسم الطالبة</th>
                   <th className="p-4 sm:p-5">عنوان المشاركة</th>
-                  <th className="p-4 sm:p-5">الفئة</th>
+                  <th className="p-4 sm:p-5">نوع المشاركة</th>
                   <th className="p-4 sm:p-5">تاريخ الإرسال</th>
                   <th className="p-4 sm:p-5">الحالة</th>
                   <th className="p-4 sm:p-5 text-center">الإجراء</th>
@@ -287,7 +282,7 @@ export default function AdminDashboard() {
                 {isLoading ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-slate-500 font-medium">
-                      جاري تحميل المشاركات...
+                      جاري تحميل المشاركات من قاعدة البيانات...
                     </td>
                   </tr>
                 ) : filteredSubmissions.length > 0 ? (
@@ -338,7 +333,7 @@ export default function AdminDashboard() {
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          <span>مراجعة وتعديل</span>
+                          <span>مراجعة</span>
                         </Link>
                       </td>
 
@@ -347,7 +342,7 @@ export default function AdminDashboard() {
                 ) : (
                   <tr>
                     <td colSpan={6} className="p-12 text-center text-slate-400 font-medium">
-                      لا توجد مشاركات تطابق الفلتر الحالي.
+                      لا توجد مشاركات مسجلة في قاعدة البيانات حالياً.
                     </td>
                   </tr>
                 )}

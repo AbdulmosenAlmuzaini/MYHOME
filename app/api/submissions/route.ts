@@ -1,64 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSubmissions, insertSubmission } from '@/lib/db';
-import { getAdminSession } from '@/lib/auth';
-import { INITIAL_APPROVED_SUBMISSIONS } from '@/lib/mock-submissions';
+import { getApprovedSubmissions, insertSubmission } from '@/lib/db';
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const requestedAll = searchParams.get('all') === 'true';
-
+// GET /api/submissions -> returns only approved submissions from Neon Postgres
+export async function GET() {
   try {
-    const session = await getAdminSession();
-    const onlyApproved = !(requestedAll && session);
-
-    const rows = await getSubmissions(onlyApproved);
-    const data = rows && rows.length > 0 ? rows : INITIAL_APPROVED_SUBMISSIONS;
-
-    return NextResponse.json({ submissions: data });
+    const rows = await getApprovedSubmissions();
+    return NextResponse.json({ submissions: rows || [] });
   } catch (error) {
-    console.warn('Postgres query fallback:', error);
-    return NextResponse.json({ submissions: INITIAL_APPROVED_SUBMISSIONS });
+    console.error('Error fetching approved submissions:', error);
+    return NextResponse.json({ submissions: [] });
   }
 }
 
+// POST /api/submissions -> receives new submission, validates, and saves as pending in Neon Postgres
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { student_name, title, description, category, file_url, file_path } = body;
 
-    if (!student_name || !title || !description) {
+    const trimmedName = student_name?.trim();
+    const trimmedTitle = title?.trim();
+    const trimmedDesc = description?.trim();
+
+    if (!trimmedName || !trimmedTitle || !trimmedDesc) {
       return NextResponse.json(
-        { error: 'جميع الحقول المطلوبة يجب تعبئتها' },
+        { error: 'جميع الحقول المطلوبة (اسم الطالبة، عنوان المشاركة، الوصف) يجب تعبئتها.' },
         { status: 400 }
       );
     }
 
-    const id = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const cat = category || 'أخرى';
+    // Generate unique ID
+    const uniqueId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const cat = category?.trim() || 'أخرى';
     const fUrl = file_url || null;
     const fPath = file_path || null;
 
-    try {
-      await insertSubmission({
-        id,
-        student_name,
-        title,
-        description,
-        category: cat,
-        file_url: fUrl,
-        file_path: fPath,
-      });
-    } catch (dbErr) {
-      console.warn('Database insert note:', dbErr);
-    }
+    // Server-enforced status = 'pending'
+    const result = await insertSubmission({
+      id: uniqueId,
+      student_name: trimmedName,
+      title: trimmedTitle,
+      description: trimmedDesc,
+      category: cat,
+      file_url: fUrl,
+      file_path: fPath,
+    });
 
     return NextResponse.json({
       success: true,
+      message: 'تم استلام المشاركة بنجاح وحفظها بحالة قيد المراجعة.',
       submission: {
-        id,
-        student_name,
-        title,
-        description,
+        id: uniqueId,
+        student_name: trimmedName,
+        title: trimmedTitle,
+        description: trimmedDesc,
         category: cat,
         file_url: fUrl,
         file_path: fPath,
@@ -69,7 +64,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Submission error:', error);
     return NextResponse.json(
-      { error: 'حدث خطأ أثناء حفظ المشاركة' },
+      { error: 'حدث خطأ أثناء حفظ المشاركة في قاعدة البيانات.' },
       { status: 500 }
     );
   }

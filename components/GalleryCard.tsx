@@ -8,7 +8,11 @@ interface GalleryCardProps {
 }
 
 export default function GalleryCard({ submission }: GalleryCardProps) {
-  const isPdf = submission.file_url?.toLowerCase().endsWith('.pdf');
+  const isPdf = 
+    submission.file_url?.toLowerCase().endsWith('.pdf') || 
+    submission.file_path?.toLowerCase().endsWith('.pdf') ||
+    submission.file_url?.startsWith('data:application/pdf');
+
   const formattedDate = submission.created_at
     ? new Date(submission.created_at).toLocaleDateString('ar-SA', {
         year: 'numeric',
@@ -50,11 +54,11 @@ export default function GalleryCard({ submission }: GalleryCardProps) {
                 href={submission.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md transition-colors"
-                title="فتح مستند PDF"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md transition-colors"
+                title="عرض ملف المشاركة"
               >
                 <FileText className="w-4 h-4" />
-                <span>عرض الملف</span>
+                <span>📄 عرض ملف المشاركة</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             ) : (
@@ -91,6 +95,21 @@ export default function GalleryCard({ submission }: GalleryCardProps) {
           <p className="text-sm text-slate-600 leading-relaxed line-clamp-4">
             {submission.description}
           </p>
+
+          {/* PDF Button if PDF and no top preview */}
+          {isPdf && submission.file_url && (
+            <div className="mt-4 pt-3 border-t border-slate-100">
+              <a
+                href={submission.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
+              >
+                <FileText className="w-4 h-4 text-emerald-600" />
+                <span>📄 عرض ملف المشاركة في تبويب جديد ↗</span>
+              </a>
+            </div>
+          )}
         </div>
       </div>
 
